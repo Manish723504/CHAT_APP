@@ -62,8 +62,12 @@ app.use("/api/auth", userRouter);
 app.use("/api/messages", messageRouter);
 
 await connectDB();
+if(process.env.NODE_ENV !== "production"){
 
 const PORT = process.env.PORT || 2000;
 server.listen(PORT, () =>
-  console.log("Server is listening on PORT: " + PORT)
-);
+  console.log("Server is listening on PORT: " + PORT
+
+  ));
+} 
+export default server;
