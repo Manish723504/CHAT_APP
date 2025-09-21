@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  // ✅ Axios interceptor -> har request ke sath JWT bhejega
+  //  Axios interceptor -> har request ke sath JWT bhejega
   axios.interceptors.request.use((config) => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     return config;
   });
 
-  // ✅ Check Auth
+  //  Check Auth
   const checkAuth = async () => {
     try {
       const { data } = await axios.get("/api/auth/check");
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Login
+  // Login
   const login = async (state, credentials) => {
     try {
       const { data } = await axios.post(`/api/auth/${state}`, credentials);
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Logout
+  //  Logout
   const logout = async () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     toast.success("Logged out Successfully");
   };
 
-  // ✅ Update Profile
+  // Update Profile
   const updateProfile = async (body) => {
     try {
       const { data } = await axios.put("/api/auth/update-profile", body);
