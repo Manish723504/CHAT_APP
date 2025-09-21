@@ -15,7 +15,7 @@ const Sidebar = () => {
   } = useContext(ChatContext);
 
   const { logout, onlineUsers } = useContext(AuthContext);
-  const [input, setInput] = useState(""); // ✅ fixed: false → ""
+  const [input, setInput] = useState(""); //  fixed: false → ""
 
   const navigate = useNavigate();
 
@@ -27,12 +27,12 @@ const Sidebar = () => {
 
   useEffect(() => {
     getUsers();
-  }, [onlineUsers, getUsers]); // ✅ safer dependency
+  }, [onlineUsers, getUsers]); // safer dependency
 
   const handleUserClick = (user) => {
     setSelectedUser(user);
 
-    // ✅ reset unseen count for that user
+    // reset unseen count for that user
     setUnseenMessages((prev) => {
       const updated = { ...prev };
       delete updated[user._id];
@@ -89,7 +89,7 @@ const Sidebar = () => {
       <div className="flex flex-col mt-4">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => {
-            const isOnline = onlineUsers?.includes(user._id); // ✅ safe check
+            const isOnline = onlineUsers?.includes(user._id); // safe check
             const unseenCount = unseenMessages?.[user._id] || 0;
 
             return (

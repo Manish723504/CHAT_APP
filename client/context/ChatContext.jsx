@@ -12,7 +12,7 @@ export const ChatProvider = ({ children }) => {
 
   const { socket, axios } = useContext(AuthContext);
 
-  // ✅ Fetch all users for sidebar
+  //  Fetch all users for sidebar
   const getUsers = async () => {
     try {
       const { data } = await axios.get("/api/messages/users");
@@ -26,7 +26,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // ✅ Fetch messages for selected user
+  // Fetch messages for selected user
   const getMessages = async (userId) => {
     try {
       const { data } = await axios.get(`/api/messages/${userId}`);
@@ -40,7 +40,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // ✅ Send message to selected user
+  // Send message to selected user
   const sendMessage = async (messageData) => {
     if (!selectedUser) return;
 
@@ -60,7 +60,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // ✅ Subscribe to incoming messages via socket
+  //  Subscribe to incoming messages via socket
   const subscribeToMessages = () => {
     if (!socket) return;
 
@@ -83,7 +83,7 @@ export const ChatProvider = ({ children }) => {
     });
   };
 
-  // ✅ Unsubscribe when cleanup
+  // Unsubscribe when cleanup
   const unsubscribeFromMessages = () => {
     if (socket) socket.off("newMessage");
   };

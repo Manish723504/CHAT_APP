@@ -17,7 +17,7 @@ const LoginPage = () => {
   const onSubmitHandler = (event) => {
     event.preventDefault();
 
-    // ✅ Sign up flow
+    //  Sign up flow
     if (currState === "Sign up") {
       if (!isDataSubmitted) {
         setIsDataSubmitted(true);
@@ -29,7 +29,7 @@ const LoginPage = () => {
       }
     }
 
-    // ✅ Call login/signup API
+    //  Call login/signup API
     login(currState === "Sign up" ? "signup" : "login", {
       fullName,
       email,
@@ -119,7 +119,7 @@ const LoginPage = () => {
             : "Login Now"}
         </button>
 
-        {/* ✅ Checkbox only on signup last step */}
+        {/* Checkbox only on signup last step */}
         {currState === "Sign up" && isDataSubmitted && (
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <input

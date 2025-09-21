@@ -140,7 +140,7 @@ const ChatContainer = () => {
                 </p>
               )}
 
-              {/* ✅ Seen ticks (only for my messages) */}
+              {/* Seen ticks (only for my messages) */}
               {msg.senderId === authUser._id && (
                 <span className="text-[10px] text-right mt-1 text-gray-300">
                   {msg.seen ? "✓✓" : "✓"}

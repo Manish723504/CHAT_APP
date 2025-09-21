@@ -82,16 +82,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Socket connection with JWT
+  // Socket connection with JWT
   const connectSocket = (userData) => {
     if (!userData || socket?.connected) return;
 
     const newSocket = io(backendUrl, {
-      auth: { token: localStorage.getItem("token") }, // 🔑 JWT bheja
+      auth: { token: localStorage.getItem("token") }, // JWT bheja
     });
 
     newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
+      console.log(" Socket connected:", newSocket.id);
     });
 
     newSocket.on("getOnlineUsers", (userIDs) => {
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }) => {
     setSocket(newSocket);
   };
 
-  // ✅ Auto-check auth on load
+  //  Auto-check auth on load
   useEffect(() => {
     if (token) {
       checkAuth();
