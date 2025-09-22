@@ -10,13 +10,12 @@ export const ChatProvider = ({ children }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [unseenMessages, setUnseenMessages] = useState({});
 
-  const { socket, axios } = useContext(AuthContext);
+  const { socket, axios, authUser } = useContext(AuthContext);
 
-  //  Fetch all users for sidebar
+  // Fetch all users for sidebar
   const getUsers = async () => {
     try {
       const { data } = await axios.get("/api/messages/users");
-
       if (data.success) {
         setUsers(data.users || []);
         setUnseenMessages(data.unseenMessages || {});
@@ -32,18 +31,29 @@ export const ChatProvider = ({ children }) => {
       const { data } = await axios.get(`/api/messages/${userId}`);
       if (data.success) {
         setMessages(data.messages);
-        // user select hote hi unseen reset kar dena
+
+        // Reset unseen counter for this user
         setUnseenMessages((prev) => ({ ...prev, [userId]: 0 }));
+
+        // Mark unseen messages seen
+        const unseenIds = data.messages
+          .filter((msg) => msg.senderId === userId && !msg.seen)
+          .map((msg) => msg._id);
+
+        if (unseenIds.length > 0) {
+          socket.emit("markSeen", unseenIds);
+          markSeen(unseenIds);
+          await axios.put("/api/messages/mark", { ids: unseenIds });
+        }
       }
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  // Send message to selected user
+  // Send a message
   const sendMessage = async (messageData) => {
     if (!selectedUser) return;
-
     try {
       const { data } = await axios.post(
         `/api/messages/send/${selectedUser._id}`,
@@ -51,41 +61,66 @@ export const ChatProvider = ({ children }) => {
       );
 
       if (data.success) {
-        setMessages((prevMessages) => [...prevMessages, data.newMessage]);
-      } else {
-        toast.error(data.message);
-      }
+        setMessages((prev) => [...prev, data.newMessage]);
+        socket.emit("sendMessage", data.newMessage);
+      } else toast.error(data.message);
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  //  Subscribe to incoming messages via socket
+  // Mark messages as seen locally
+  const markSeen = (ids) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        ids.includes(msg._id) ? { ...msg, seen: true } : msg
+      )
+    );
+
+    // Reset unseen counter for currently open chat
+    if (selectedUser) {
+      setUnseenMessages((prev) => ({ ...prev, [selectedUser._id]: 0 }));
+    }
+  };
+
+  // Handle user selection
+  const handleSelectUser = async (user) => {
+    setSelectedUser(user);
+    setUnseenMessages((prev) => ({ ...prev, [user._id]: 0 }));
+    await getMessages(user._id);
+  };
+
+  // Subscribe to socket events
   const subscribeToMessages = () => {
     if (!socket) return;
 
-    socket.on("newMessage", (newMessage) => {
-      if (selectedUser && newMessage.senderId === selectedUser._id) {
-        // agar same chat open hai → seen mark karo
-        newMessage.seen = true;
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
+    socket.on("newMessage", async (msg) => {
+      setMessages((prev) => [...prev, msg]);
 
-        axios.put(`/api/messages/mark/${newMessage._id}`);
-      } else {
-        // agar chat open nahi hai → unseen count badhao
-        setUnseenMessages((prevUnseenMessages) => ({
-          ...prevUnseenMessages,
-          [newMessage.senderId]: prevUnseenMessages[newMessage.senderId]
-            ? prevUnseenMessages[newMessage.senderId] + 1
-            : 1,
+      if (selectedUser && msg.senderId === selectedUser._id) {
+        // Chat open → mark seen immediately
+        msg.seen = true;
+        markSeen([msg._id]);
+        socket.emit("markSeen", [msg._id]);
+        await axios.put("/api/messages/mark", { ids: [msg._id] });
+      } else if (msg.receiverId === authUser._id) {
+        // Chat closed → increment unseen counter
+        setUnseenMessages((prev) => ({
+          ...prev,
+          [msg.senderId]: (prev[msg.senderId] || 0) + 1,
         }));
       }
     });
+
+    socket.on("messagesSeen", (seenIds) => {
+      markSeen(seenIds);
+    });
   };
 
-  // Unsubscribe when cleanup
   const unsubscribeFromMessages = () => {
-    if (socket) socket.off("newMessage");
+    if (!socket) return;
+    socket.off("newMessage");
+    socket.off("messagesSeen");
   };
 
   useEffect(() => {
@@ -100,9 +135,10 @@ export const ChatProvider = ({ children }) => {
     getUsers,
     getMessages,
     sendMessage,
-    setSelectedUser,
+    setSelectedUser: handleSelectUser, // use updated handler
     unseenMessages,
     setUnseenMessages,
+    markSeen,
   };
 
   return (

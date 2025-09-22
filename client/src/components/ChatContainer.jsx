@@ -6,8 +6,17 @@ import { AuthContext } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
 const ChatContainer = () => {
-  const { messages, selectedUser, setSelectedUser, sendMessage, getMessages, markSeen } =
-    useContext(ChatContext);
+  const {
+    messages,
+    selectedUser,
+    setSelectedUser,
+    sendMessage,
+    getMessages,
+    markSeen,
+    unseenMessages,
+    setUnseenMessages,
+  } = useContext(ChatContext);
+
   const { authUser, onlineUsers, socket } = useContext(AuthContext);
 
   const scrollEnd = useRef();
@@ -40,6 +49,9 @@ const ChatContainer = () => {
   useEffect(() => {
     if (selectedUser) {
       getMessages(selectedUser._id);
+
+      // Reset unseen count for this user when chat opens
+      setUnseenMessages((prev) => ({ ...prev, [selectedUser._id]: 0 }));
     }
   }, [selectedUser]);
 
@@ -50,9 +62,9 @@ const ChatContainer = () => {
     }
   }, [messages]);
 
-  // mark seen when opening
+  // mark seen when new messages arrive
   useEffect(() => {
-    if (!selectedUser) return;
+    if (!selectedUser || !socket) return;
 
     const unseenMsgIds = messages
       .filter((m) => m.senderId === selectedUser._id && !m.seen)
@@ -60,10 +72,18 @@ const ChatContainer = () => {
 
     if (unseenMsgIds.length > 0) {
       socket.emit("markSeen", unseenMsgIds);
-      // locally update seen too
       markSeen(unseenMsgIds);
     }
-  }, [messages, selectedUser, socket, markSeen]);
+
+    // Listen for seen updates from backend
+    socket.on("messagesSeen", (seenMessageIds) => {
+      markSeen(seenMessageIds);
+    });
+
+    return () => {
+      socket.off("messagesSeen");
+    };
+  }, [messages, selectedUser, socket]);
 
   return selectedUser ? (
     <div className="h-full overflow-hidden relative backdrop-blur-lg">
@@ -102,7 +122,7 @@ const ChatContainer = () => {
               msg.senderId === authUser._id ? "justify-end" : "justify-start"
             }`}
           >
-            {/* Avatar (left side for others) */}
+            {/* Avatar for others */}
             {msg.senderId !== authUser._id && (
               <div className="mr-2 text-center text-xs">
                 <img
@@ -140,15 +160,19 @@ const ChatContainer = () => {
                 </p>
               )}
 
-              {/* Seen ticks (only for my messages) */}
+              {/* Seen ticks */}
               {msg.senderId === authUser._id && (
-                <span className="text-[10px] text-right mt-1 text-gray-300">
+                <span
+                  className={`text-[10px] text-right mt-1 ${
+                    msg.seen ? "text-blue-400" : "text-gray-400"
+                  }`}
+                >
                   {msg.seen ? "✓✓" : "✓"}
                 </span>
               )}
             </div>
 
-            {/* Avatar (right side for your messages) */}
+            {/* Avatar for self */}
             {msg.senderId === authUser._id && (
               <div className="ml-2 text-center text-xs">
                 <img

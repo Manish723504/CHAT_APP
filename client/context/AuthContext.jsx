@@ -14,16 +14,17 @@ export const AuthProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  //  Axios interceptor -> har request ke sath JWT bhejega
-  axios.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
+  // Axios interceptor -> only once
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use((config) => {
+      const token = localStorage.getItem("token");
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+      return config;
+    });
+    return () => axios.interceptors.request.eject(interceptor);
+  }, []);
 
-  //  Check Auth
+  // Check Auth
   const checkAuth = async () => {
     try {
       const { data } = await axios.get("/api/auth/check");
@@ -44,19 +45,15 @@ export const AuthProvider = ({ children }) => {
         setAuthUser(data.userData);
         setToken(data.token);
         localStorage.setItem("token", data.token);
-
         connectSocket(data.userData);
-
         toast.success(data.message);
-      } else {
-        toast.error(data.message);
-      }
+      } else toast.error(data.message);
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  //  Logout
+  // Logout
   const logout = async () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -75,37 +72,50 @@ export const AuthProvider = ({ children }) => {
       const { data } = await axios.put("/api/auth/update-profile", body);
       if (data.success) {
         setAuthUser(data.user);
-        toast.success("Profile Updated ");
+        toast.success("Profile Updated");
       }
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  // Socket connection with JWT
+  // Connect Socket
   const connectSocket = (userData) => {
-    if (!userData || socket?.connected) return;
+    if (!userData) return;
+
+    // Disconnect old socket if exists
+    if (socket) {
+      socket.disconnect();
+    }
 
     const newSocket = io(backendUrl, {
-      auth: { token: localStorage.getItem("token") }, // JWT bheja
+      auth: { token: localStorage.getItem("token") },
     });
 
     newSocket.on("connect", () => {
-      console.log(" Socket connected:", newSocket.id);
+      console.log("Socket connected:", newSocket.id);
     });
 
     newSocket.on("getOnlineUsers", (userIDs) => {
       setOnlineUsers(userIDs);
     });
 
+    // Direct socket usage for ChatContext
+    newSocket.on("newMessage", (msg) => {
+      // Can be handled directly in ChatContext
+    });
+
+    newSocket.on("messagesSeen", (msgIds) => {
+      // Can be handled directly in ChatContext
+    });
+
     setSocket(newSocket);
   };
 
-  //  Auto-check auth on load
+  // Auto-check auth on load
   useEffect(() => {
-    if (token) {
-      checkAuth();
-    }
+    if (token) checkAuth();
+
     return () => {
       if (socket) socket.disconnect();
     };
@@ -121,9 +131,5 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

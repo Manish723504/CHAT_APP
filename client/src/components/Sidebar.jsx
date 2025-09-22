@@ -7,6 +7,7 @@ import { ChatContext } from "../../context/ChatContext";
 const Sidebar = () => {
   const {
     getUsers,
+    getMessages,
     users,
     selectedUser,
     setSelectedUser,
@@ -15,7 +16,7 @@ const Sidebar = () => {
   } = useContext(ChatContext);
 
   const { logout, onlineUsers } = useContext(AuthContext);
-  const [input, setInput] = useState(""); //  fixed: false → ""
+  const [input, setInput] = useState("");
 
   const navigate = useNavigate();
 
@@ -27,17 +28,20 @@ const Sidebar = () => {
 
   useEffect(() => {
     getUsers();
-  }, [onlineUsers, getUsers]); // safer dependency
+  }, [onlineUsers, getUsers]);
 
-  const handleUserClick = (user) => {
+  const handleUserClick = async (user) => {
+    if (!user || !user._id) return;
+
     setSelectedUser(user);
 
-    // reset unseen count for that user
-    setUnseenMessages((prev) => {
-      const updated = { ...prev };
-      delete updated[user._id];
-      return updated;
-    });
+    await getMessages(user._id);
+
+    // Reset unseen counter for this user
+    setUnseenMessages((prev) => ({
+      ...prev,
+      [user._id]: 0,
+    }));
   };
 
   return (
@@ -46,7 +50,7 @@ const Sidebar = () => {
         selectedUser ? "max-md:hidden" : ""
       }`}
     >
-      {/* ------- Header ------- */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-5">
         <img src={assets.logo} alt="logo" className="w-36" />
         <div className="relative py-2 group">
@@ -73,7 +77,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* ------- Search ------- */}
+      {/* Search */}
       <div className="bg-[#282142] rounded-full flex items-center gap-2 py-3 px-4">
         <img src={assets.search_icon} alt="Search" className="w-3" />
         <input
@@ -85,11 +89,11 @@ const Sidebar = () => {
         />
       </div>
 
-      {/* ------- User List ------- */}
+      {/* User List */}
       <div className="flex flex-col mt-4">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => {
-            const isOnline = onlineUsers?.includes(user._id); // safe check
+            const isOnline = onlineUsers?.includes(user._id);
             const unseenCount = unseenMessages?.[user._id] || 0;
 
             return (
@@ -116,11 +120,11 @@ const Sidebar = () => {
                   </span>
                 </div>
 
-                {/* Unseen message badge */}
+                {/*  Unseen Message Badge (Fixed & Styled) */}
                 {unseenCount > 0 && (
-                  <p className="absolute top-4 right-4 text-xs h-5 w-5 flex justify-center items-center rounded-full bg-violet-500/70">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-violet-600 text-white text-xs font-semibold h-5 w-5 flex items-center justify-center rounded-full shadow-md">
                     {unseenCount}
-                  </p>
+                  </div>
                 )}
               </div>
             );
