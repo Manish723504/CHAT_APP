@@ -1,5 +1,4 @@
 import { createContext, useEffect, useState } from "react";
-import { Analytics } from '@vercel/analytics/next';
 import axios from "axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
@@ -133,5 +132,5 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
   };
 
-  return <AuthContext.Provider value={value}>{children}<Analytics /></AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
