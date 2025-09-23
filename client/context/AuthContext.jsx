@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState } from "react";
+import { Analytics } from '@vercel/analytics/next';
 import axios from "axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }) => {
   // Login
   const login = async (state, credentials) => {
     try {
+      
       const { data } = await axios.post(`/api/auth/${state}`, credentials);
       if (data.success) {
         setAuthUser(data.userData);
@@ -131,5 +133,5 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}<Analytics /></AuthContext.Provider>;
 };
