@@ -27,6 +27,7 @@ export const ChatProvider = ({ children }) => {
 
   // Fetch messages for selected user
   const getMessages = async (userId) => {
+    if (!userId) return; // ✅ safety check
     try {
       const { data } = await axios.get(`/api/messages/${userId}`);
       if (data.success) {
@@ -41,7 +42,7 @@ export const ChatProvider = ({ children }) => {
           .map((msg) => msg._id);
 
         if (unseenIds.length > 0) {
-          socket.emit("markSeen", unseenIds);
+          socket?.emit("markSeen", unseenIds);
           markSeen(unseenIds);
           await axios.put("/api/messages/mark", { ids: unseenIds });
         }
@@ -53,7 +54,7 @@ export const ChatProvider = ({ children }) => {
 
   // Send a message
   const sendMessage = async (messageData) => {
-    if (!selectedUser) return;
+    if (!selectedUser?._id) return; // ✅ safe check
     try {
       const { data } = await axios.post(
         `/api/messages/send/${selectedUser._id}`,
@@ -62,7 +63,7 @@ export const ChatProvider = ({ children }) => {
 
       if (data.success) {
         setMessages((prev) => [...prev, data.newMessage]);
-        socket.emit("sendMessage", data.newMessage);
+        socket?.emit("sendMessage", data.newMessage);
       } else toast.error(data.message);
     } catch (error) {
       toast.error(error.message);
@@ -78,13 +79,14 @@ export const ChatProvider = ({ children }) => {
     );
 
     // Reset unseen counter for currently open chat
-    if (selectedUser) {
+    if (selectedUser?._id) {
       setUnseenMessages((prev) => ({ ...prev, [selectedUser._id]: 0 }));
     }
   };
 
   // Handle user selection
   const handleSelectUser = async (user) => {
+    if (!user?._id) return; // ✅ prevent null crash
     setSelectedUser(user);
     setUnseenMessages((prev) => ({ ...prev, [user._id]: 0 }));
     await getMessages(user._id);
@@ -97,13 +99,13 @@ export const ChatProvider = ({ children }) => {
     socket.on("newMessage", async (msg) => {
       setMessages((prev) => [...prev, msg]);
 
-      if (selectedUser && msg.senderId === selectedUser._id) {
+      if (selectedUser?._id && msg.senderId === selectedUser._id) {
         // Chat open → mark seen immediately
         msg.seen = true;
         markSeen([msg._id]);
         socket.emit("markSeen", [msg._id]);
         await axios.put("/api/messages/mark", { ids: [msg._id] });
-      } else if (msg.receiverId === authUser._id) {
+      } else if (authUser?._id && msg.receiverId === authUser._id) {
         // Chat closed → increment unseen counter
         setUnseenMessages((prev) => ({
           ...prev,
