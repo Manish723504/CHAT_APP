@@ -27,7 +27,6 @@ export const ChatProvider = ({ children }) => {
 
   // ✅ Fetch messages for selected user
   const getMessages = async (userId) => {
-    if (!userId) return; // 🔒 Safe check
     try {
       const { data } = await axios.get(`/api/messages/${userId}`);
       if (data.success) {
@@ -54,7 +53,7 @@ export const ChatProvider = ({ children }) => {
 
   // ✅ Send a message
   const sendMessage = async (messageData) => {
-    if (!selectedUser || !selectedUser._id) return; // 🔒 Safe check
+    if (!selectedUser) return;
     try {
       const { data } = await axios.post(
         `/api/messages/send/${selectedUser._id}`,
@@ -72,26 +71,19 @@ export const ChatProvider = ({ children }) => {
 
   // ✅ Mark messages seen locally
   const markSeen = (ids) => {
-    if (!ids || ids.length === 0) return; // 🔒 Safe check
-
     setMessages((prev) =>
       prev.map((msg) =>
         ids.includes(msg._id) ? { ...msg, seen: true } : msg
       )
     );
 
-    if (selectedUser?._id) {
+    if (selectedUser) {
       setUnseenMessages((prev) => ({ ...prev, [selectedUser._id]: 0 }));
     }
   };
 
-  // ✅ Handle user selection (FIXED)
+  // ✅ Handle user selection (safe select)
   const handleSelectUser = async (user) => {
-    if (!user || !user._id) {
-      console.warn("Invalid user selected:", user);
-      return;
-    }
-
     setSelectedUser(user);
     setUnseenMessages((prev) => ({ ...prev, [user._id]: 0 }));
     await getMessages(user._id);
@@ -105,12 +97,12 @@ export const ChatProvider = ({ children }) => {
     const handleNewMessage = async (msg) => {
       setMessages((prev) => [...prev, msg]);
 
-      if (selectedUser?._id && msg.senderId === selectedUser._id) {
+      if (selectedUser && msg.senderId === selectedUser._id) {
         msg.seen = true;
         markSeen([msg._id]);
         socket.emit("markSeen", [msg._id]);
         await axios.put("/api/messages/mark", { ids: [msg._id] });
-      } else if (msg.receiverId === authUser?._id) {
+      } else if (msg.receiverId === authUser._id) {
         setUnseenMessages((prev) => ({
           ...prev,
           [msg.senderId]: (prev[msg.senderId] || 0) + 1,
@@ -141,10 +133,11 @@ export const ChatProvider = ({ children }) => {
     messages,
     users,
     selectedUser,
+    setSelectedUser,   // 🔹 direct expose (null karne ke liye)
+    handleSelectUser,  // 🔹 user select ke liye safe function
     getUsers,
     getMessages,
     sendMessage,
-    setSelectedUser: handleSelectUser,
     unseenMessages,
     setUnseenMessages,
     markSeen,

@@ -9,13 +9,12 @@ const Sidebar = () => {
     getUsers,
     users,
     selectedUser,
-    setSelectedUser: handleSelectUser,
+    setSelectedUser: handleSelectUser, // Using ChatContext's safe function
     unseenMessages,
   } = useContext(ChatContext);
 
   const { logout, onlineUsers } = useContext(AuthContext);
   const [input, setInput] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false); // 🔹 Dropdown state
 
   const navigate = useNavigate();
 
@@ -38,36 +37,22 @@ const Sidebar = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-5">
         <img src={assets.logo} alt="logo" className="w-36" />
-
-        {/* Menu */}
-        <div className="relative py-2">
+        <div className="relative py-2 group">
           <img
             src={assets.menu_icon}
             alt="menu"
             className="max-h-5 cursor-pointer"
-            onClick={() => setMenuOpen(!menuOpen)} // 🔹 Toggle menu
           />
-          <div
-            className={`absolute top-full right-0 z-20 w-32 p-4 rounded-md bg-[#282142]
-           border border-gray-600 text-gray-100 flex-col transition-all duration-200 ${
-             menuOpen ? "flex" : "hidden"
-           }`}
-          >
+          <div className="absolute top-full right-0 z-20 w-32 p-4 rounded-md bg-[#282142] border border-gray-600 text-gray-100 hidden group-hover:flex flex-col">
             <p
-              onClick={() => {
-                navigate("/profile");
-                setMenuOpen(false); // close after click
-              }}
+              onClick={() => navigate("/profile")}
               className="cursor-pointer text-sm hover:text-violet-400"
             >
               Edit Profile
             </p>
             <hr className="my-2 border-t border-gray-500" />
             <p
-              onClick={() => {
-                logout();
-                setMenuOpen(false); // close after click
-              }}
+              onClick={logout}
               className="cursor-pointer text-sm hover:text-violet-400"
             >
               Logout
@@ -98,7 +83,7 @@ const Sidebar = () => {
             return (
               <div
                 key={user._id}
-                onClick={() => handleSelectUser(user)}
+                onClick={() => handleSelectUser(user)} // Safe call
                 className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer hover:bg-[#282142]/30 ${
                   selectedUser?._id === user._id ? "bg-[#282142]/50" : ""
                 }`}
