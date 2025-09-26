@@ -7,16 +7,15 @@ import { ChatContext } from "../../context/ChatContext";
 const Sidebar = () => {
   const {
     getUsers,
-    getMessages,
     users,
     selectedUser,
-    setSelectedUser,
+    setSelectedUser: handleSelectUser,
     unseenMessages,
-    setUnseenMessages,
   } = useContext(ChatContext);
 
   const { logout, onlineUsers } = useContext(AuthContext);
   const [input, setInput] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false); // 🔹 Dropdown state
 
   const navigate = useNavigate();
 
@@ -30,20 +29,6 @@ const Sidebar = () => {
     getUsers();
   }, [onlineUsers, getUsers]);
 
-  const handleUserClick = async (user) => {
-    if (!user || !user._id) return;
-
-    setSelectedUser(user);
-
-    await getMessages(user._id);
-
-    // Reset unseen counter for this user
-    setUnseenMessages((prev) => ({
-      ...prev,
-      [user._id]: 0,
-    }));
-  };
-
   return (
     <div
       className={`bg-[#8185B2]/10 h-full p-5 rounded-r-xl overflow-y-auto text-white scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent ${
@@ -53,22 +38,36 @@ const Sidebar = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-5">
         <img src={assets.logo} alt="logo" className="w-36" />
-        <div className="relative py-2 group">
+
+        {/* Menu */}
+        <div className="relative py-2">
           <img
             src={assets.menu_icon}
             alt="menu"
             className="max-h-5 cursor-pointer"
+            onClick={() => setMenuOpen(!menuOpen)} // 🔹 Toggle menu
           />
-          <div className="absolute top-full right-0 z-20 w-32 p-4 rounded-md bg-[#282142] border border-gray-600 text-gray-100 hidden group-hover:flex flex-col">
+          <div
+            className={`absolute top-full right-0 z-20 w-32 p-4 rounded-md bg-[#282142]
+           border border-gray-600 text-gray-100 flex-col transition-all duration-200 ${
+             menuOpen ? "flex" : "hidden"
+           }`}
+          >
             <p
-              onClick={() => navigate("/profile")}
+              onClick={() => {
+                navigate("/profile");
+                setMenuOpen(false); // close after click
+              }}
               className="cursor-pointer text-sm hover:text-violet-400"
             >
               Edit Profile
             </p>
             <hr className="my-2 border-t border-gray-500" />
             <p
-              onClick={logout}
+              onClick={() => {
+                logout();
+                setMenuOpen(false); // close after click
+              }}
               className="cursor-pointer text-sm hover:text-violet-400"
             >
               Logout
@@ -99,7 +98,7 @@ const Sidebar = () => {
             return (
               <div
                 key={user._id}
-                onClick={() => handleUserClick(user)}
+                onClick={() => handleSelectUser(user)}
                 className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer hover:bg-[#282142]/30 ${
                   selectedUser?._id === user._id ? "bg-[#282142]/50" : ""
                 }`}
@@ -120,7 +119,7 @@ const Sidebar = () => {
                   </span>
                 </div>
 
-                {/*  Unseen Message Badge (Fixed & Styled) */}
+                {/* Unseen Message Badge */}
                 {unseenCount > 0 && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-violet-600 text-white text-xs font-semibold h-5 w-5 flex items-center justify-center rounded-full shadow-md">
                     {unseenCount}
