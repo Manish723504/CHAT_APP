@@ -9,13 +9,13 @@ const Sidebar = () => {
     getUsers,
     users,
     selectedUser,
-    setSelectedUser: handleSelectUser,
+    handleSelectUser, //  safe function from ChatContext
     unseenMessages,
   } = useContext(ChatContext);
 
   const { logout, onlineUsers } = useContext(AuthContext);
   const [input, setInput] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false); // 👈 click state
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -43,16 +43,15 @@ const Sidebar = () => {
             src={assets.menu_icon}
             alt="menu"
             className="max-h-5 cursor-pointer"
-            onClick={() => setMenuOpen((prev) => !prev)} // 👈 toggle on click
+            onClick={() => setMenuOpen((prev) => !prev)}
           />
 
-          {/* Dropdown */}
           {menuOpen && (
             <div className="absolute top-full right-0 z-20 w-32 p-4 rounded-md bg-[#282142] border border-gray-600 text-gray-100 flex flex-col">
               <p
                 onClick={() => {
                   navigate("/profile");
-                  setMenuOpen(false); // 👈 close after click
+                  setMenuOpen(false);
                 }}
                 className="cursor-pointer text-sm hover:text-violet-400"
               >
@@ -117,7 +116,7 @@ const Sidebar = () => {
                 </div>
 
                 {/* Unseen Message Badge */}
-                {unseenCount > 0 && (
+                {unseenCount > 0 && selectedUser?._id !== user._id && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-violet-600 text-white text-xs font-semibold h-5 w-5 flex items-center justify-center rounded-full shadow-md">
                     {unseenCount}
                   </div>

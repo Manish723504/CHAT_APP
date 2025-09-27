@@ -21,7 +21,7 @@ const ChatContainer = () => {
   const scrollEnd = useRef();
   const [input, setInput] = useState("");
 
-  // ✅ send text
+  //  Send text message
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (input.trim() === "") return;
@@ -29,7 +29,7 @@ const ChatContainer = () => {
     setInput("");
   };
 
-  // ✅ send image
+  //  Send image
   const handleSendImage = async (e) => {
     const file = e.target.files[0];
     if (!file || !file.type.startsWith("image/")) {
@@ -44,38 +44,39 @@ const ChatContainer = () => {
     reader.readAsDataURL(file);
   };
 
-  // ✅ fetch messages when user selected
+  //  Fetch messages when a user is selected
   useEffect(() => {
-    if (selectedUser) {
-      getMessages(selectedUser._id);
-      setUnseenMessages((prev) => ({ ...prev, [selectedUser._id]: 0 }));
-    }
+    if (!selectedUser) return;
+
+    getMessages(selectedUser._id);
+    setUnseenMessages((prev) => ({ ...prev, [selectedUser._id]: 0 }));
   }, [selectedUser]);
 
-  // ✅ auto scroll
+  //  Auto scroll to bottom
   useEffect(() => {
     if (scrollEnd.current && messages.length > 0) {
       scrollEnd.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  // ✅ mark seen + cleanup
+  // Mark incoming messages as seen
   useEffect(() => {
     if (!selectedUser || !socket) return;
 
+    // Messages from selectedUser that are not yet seen
     const unseenMsgIds = messages
-      .filter((m) => m.senderId === selectedUser._id && !m.seen)
-      .map((m) => m._id);
+      .filter((msg) => msg.senderId === selectedUser._id && !msg.seen)
+      .map((msg) => msg._id);
 
     if (unseenMsgIds.length > 0) {
-      socket.emit("markSeen", unseenMsgIds);
-      markSeen(unseenMsgIds);
+      markSeen(unseenMsgIds);          // Update local state
+      socket.emit("markSeen", unseenMsgIds); // Notify backend
     }
 
+    // Listen for seen updates from backend
     const handleSeen = (seenMessageIds) => {
       markSeen(seenMessageIds);
     };
-
     socket.on("messagesSeen", handleSeen);
 
     return () => {
@@ -85,9 +86,8 @@ const ChatContainer = () => {
 
   return selectedUser ? (
     <div className="h-full flex flex-col overflow-hidden relative backdrop-blur-lg">
-      {/* ✅ header */}
+      {/* Header */}
       <div className="flex items-center gap-3 py-3 px-4 border-b border-stone-500 bg-gray-900/70">
-        {/* Back button (mobile only) */}
         <img
           onClick={() => setSelectedUser(null)}
           src={assets.arrow_icon}
@@ -112,11 +112,11 @@ const ChatContainer = () => {
         />
       </div>
 
-      {/* ✅ chat area */}
+      {/* Chat Area */}
       <div className="flex-1 flex flex-col overflow-y-auto p-3 pb-20">
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div
-            key={index}
+            key={msg._id}
             className={`flex items-end mb-6 ${
               msg.senderId === authUser._id ? "justify-end" : "justify-start"
             }`}
@@ -189,7 +189,7 @@ const ChatContainer = () => {
         <div ref={scrollEnd}></div>
       </div>
 
-      {/* ✅ bottom input */}
+      {/* Bottom Input */}
       <form
         onSubmit={handleSendMessage}
         className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3 bg-gray-900/70"
