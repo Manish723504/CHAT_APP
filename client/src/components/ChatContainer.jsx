@@ -84,6 +84,32 @@ const ChatContainer = () => {
     };
   }, [messages, selectedUser, socket]);
 
+  // Listen for new messages (real-time update)
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (msg) => {
+      if (selectedUser && msg.senderId === selectedUser._id) {
+        // If chatting with this user
+        markSeen([msg._id]);
+        socket.emit("markSeen", [msg._id]);
+        getMessages(selectedUser._id); // refresh messages
+      } else {
+        // Increase unseen counter for other users
+        setUnseenMessages((prev) => ({
+          ...prev,
+          [msg.senderId]: (prev[msg.senderId] || 0) + 1,
+        }));
+      }
+    };
+
+    socket.on("newMessage", handleNewMessage);
+
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+    };
+  }, [socket, selectedUser]);
+
   return selectedUser ? (
     <div className="h-full flex flex-col overflow-hidden relative backdrop-blur-lg">
       {/* Header */}
