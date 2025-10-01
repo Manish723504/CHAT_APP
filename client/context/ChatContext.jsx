@@ -12,7 +12,7 @@ export const ChatProvider = ({ children }) => {
 
   const { socket, axios, authUser } = useContext(AuthContext);
 
-  //  Fetch all users
+  // Fetch all users
   const getUsers = async () => {
     try {
       const { data } = await axios.get("/api/messages/users");
@@ -33,8 +33,12 @@ export const ChatProvider = ({ children }) => {
       if (data.success) {
         setMessages(data.messages);
 
-        // Reset unseen counter for this user
-        setUnseenMessages((prev) => ({ ...prev, [userId]: 0 }));
+        // Reset unseen counter for this user (delete instead of 0)
+        setUnseenMessages((prev) => {
+          const updated = { ...prev };
+          delete updated[userId];
+          return updated;
+        });
 
         // Mark unseen msgs as seen
         const unseenIds = data.messages
@@ -70,7 +74,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  //  Mark msgs seen locally
+  // Mark msgs seen locally
   const markSeen = (ids) => {
     if (!ids?.length) return;
     setMessages((prev) =>
@@ -80,7 +84,11 @@ export const ChatProvider = ({ children }) => {
     );
 
     if (selectedUser) {
-      setUnseenMessages((prev) => ({ ...prev, [selectedUser._id]: 0 }));
+      setUnseenMessages((prev) => {
+        const updated = { ...prev };
+        delete updated[selectedUser._id];
+        return updated;
+      });
     }
   };
 
@@ -90,12 +98,16 @@ export const ChatProvider = ({ children }) => {
     setSelectedUser(user);
 
     // Reset counter when user opens chat
-    setUnseenMessages((prev) => ({ ...prev, [user._id]: 0 }));
+    setUnseenMessages((prev) => {
+      const updated = { ...prev };
+      delete updated[user._id];
+      return updated;
+    });
 
     await getMessages(user._id);
   };
 
-  //  Subscribe to socket events
+  // Subscribe to socket events
   const subscribeToMessages = () => {
     if (!socket) return () => {};
 
@@ -106,6 +118,13 @@ export const ChatProvider = ({ children }) => {
         markSeen([msg._id]);
         socket.emit("markSeen", [msg._id]);
         await axios.put("/api/messages/mark", { ids: [msg._id] });
+
+        // remove unseen counter
+        setUnseenMessages((prev) => {
+          const updated = { ...prev };
+          delete updated[msg.senderId];
+          return updated;
+        });
       }
       // Agar message current user ke liye hai aur chat open nahi hai → unseen +1
       else if (msg.receiverId === authUser._id) {
