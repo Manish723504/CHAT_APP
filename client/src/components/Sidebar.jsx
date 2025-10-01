@@ -9,7 +9,7 @@ const Sidebar = () => {
     getUsers,
     users,
     selectedUser,
-    handleSelectUser,
+    handleSelectUser, //  safe function from ChatContext
     unseenMessages,
   } = useContext(ChatContext);
 
@@ -89,7 +89,7 @@ const Sidebar = () => {
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => {
             const isOnline = onlineUsers?.includes(user._id);
-            const unseenCount = unseenMessages?.[user._id] ?? 0;
+            const unseenCount = unseenMessages?.[user._id] || 0;
 
             return (
               <div
